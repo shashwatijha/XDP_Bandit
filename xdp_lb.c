@@ -14,10 +14,17 @@ struct {
 
 struct {
     __uint(type, BPF_MAP_TYPE_ARRAY);
-    __uint(max_entries, 2); // One for each backend
+    __uint(max_entries, 2);
     __type(key, __u32);
     __type(value, __u64);
 } pkt_counters SEC(".maps");
+
+struct {
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __uint(max_entries, 2);
+    __type(key, __u32);
+    __type(value, __u64);
+} traffic_stats SEC(".maps");
 
 SEC("xdp")
 int xdp_lb_prog(struct xdp_md *ctx) {
@@ -32,7 +39,17 @@ int xdp_lb_prog(struct xdp_md *ctx) {
     struct iphdr *iph = (void *)(eth + 1);
     if ((void *)(iph + 1) > data_end) return XDP_PASS;
 
-    if (iph->protocol != IPPROTO_ICMP) return XDP_PASS;
+    /* Filter for ICMP and UDP to allow testing different packet sizes */
+    if (iph->protocol != IPPROTO_ICMP && iph->protocol != IPPROTO_UDP)
+        return XDP_PASS;
+
+    /* Traffic Awareness: Categorize by IP total length */
+    __u16 length = (iph->tot_len << 8) | (iph->tot_len >> 8);
+    __u32 size_idx = (length > 1000) ? 1 : 0;
+    __u64 *stat_count = bpf_map_lookup_elem(&traffic_stats, &size_idx);
+    if (stat_count) {
+        __sync_fetch_and_add(stat_count, 1);
+    }
 
     __u32 key = 0;
     __u32 *sel = bpf_map_lookup_elem(&backend_selector, &key);
@@ -43,7 +60,6 @@ int xdp_lb_prog(struct xdp_md *ctx) {
         if (count) {
             __sync_fetch_and_add(count, 1);
         }
-        bpf_printk("Bandit chose backend %d, incrementing counter\n", backend_idx);
         return XDP_PASS; 
     }
 
