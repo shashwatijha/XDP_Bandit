@@ -1,11 +1,12 @@
-#ifndef __BALANCER_CONFIG_H
-#define __BALANCER_CONFIG_H
+#ifndef BALANCER_CONFIG_H
+#define BALANCER_CONFIG_H
 
-#define BE1_IP 0x02010a0a // 10.10.1.2
-#define BE2_IP 0x03010a0a // 10.10.1.3
+// Backend 1: 10.10.1.2 (0x02010a0a in hex)
+#define BE1_MAC {0xec, 0xb1, 0xd7, 0x85, 0x2a, 0xd3}
+#define BE1_IP 0x02010a0a
 
-// MAC addresses as byte arrays
-#define BE1_MAC {0xa0, 0x36, 0x9f, 0x2a, 0x5d, 0x20}
-#define BE2_MAC {0xa0, 0x36, 0x9f, 0x28, 0xf3, 0x08}
+// Backend 2: 10.10.1.3 (0x03010a0a in hex)
+#define BE2_MAC {0x14, 0x58, 0xd0, 0x58, 0xaf, 0x73}
+#define BE2_IP 0x03010a0a
 
 #endif
