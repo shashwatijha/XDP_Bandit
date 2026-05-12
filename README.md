@@ -8,7 +8,7 @@ Built and tested on CloudLab (`c220g5` nodes, Ubuntu 22.04, kernel 5.15).
 
 ## How it works
 
-The kernel side (`xdp_lb.c`) hooks into XDP — before the kernel even allocates a socket buffer — and does two things: counts packets per backend, and puts incoming traffic into one of two buckets (mouse flows ≤1000 bytes, elephant flows >1000 bytes). It writes those counts into BPF maps.
+The kernel side (`xdp_lb.c`) hooks into XDP : before the kernel even allocates a socket buffer : and does two things: counts packets per backend, and puts incoming traffic into one of two buckets (mouse flows ≤1000 bytes, elephant flows >1000 bytes). It writes those counts into BPF maps.
 
 The userspace side (`mab_daemon_traffic.py`) polls those maps every 500ms, builds a context vector from the traffic type, runs the LinUCB math, picks a backend, and writes that decision back into the `backend_selector` map. The XDP program reads that on the next packet.
 
@@ -27,9 +27,9 @@ node2  :  backend 2   (10.10.1.3)
 node3  :  client / traffic generator  [optional]
 ```
 
-`chaos_env.py` SSHes into node1 and node2 directly, so it can run on node0 — no need for a separate machine just for chaos injection.
+`chaos_env.py` SSHes into node1 and node2 directly, so it can run on node0 : no need for a separate machine just for chaos injection.
 
-**CloudLab profile:** any bare-metal x86 profile works. We used `c220g5`. The nodes need to share an experiment network interface — ours was `eno1d1` on the `10.10.1.0/24` subnet. If yours is different you'll need to change the interface name in the attach command and in `chaos_env.py`.
+**CloudLab profile:** any bare-metal x86 profile works. We used `c220g5`. The nodes need to share an experiment network interface , ours was `eno1d1` on the `10.10.1.0/24` subnet. If yours is different you'll need to change the interface name in the attach command and in `chaos_env.py`.
 
 **Kernel requirement:** 5.10 or newer. BPF map pinning and XDP are both needed.
 
@@ -59,7 +59,7 @@ clang --version   # needs 10+
 
 The backend IPs and MACs are hardcoded in two places. You need to fix both before building.
 
-**1. `balancer_config.h`** — find your node1 and node2 MAC/IP:
+**1. `balancer_config.h`** , find your node1 and node2 MAC/IP:
 
 ```bash
 ssh node1 "ip addr show eno1d1"
@@ -84,7 +84,7 @@ hex(struct.unpack("<I", socket.inet_aton("10.10.1.2"))[0])
 #  '0x02010a0a'
 ```
 
-**2. `mab_daemon_traffic.py`** — around line 35 there's a hardcoded penalty for node1. Change the IP to match yours:
+**2. `mab_daemon_traffic.py`** , around line 35 there's a hardcoded penalty for node1. Change the IP to match yours:
 
 ```python
 if is_elephant == 1.0 and ip == "10.10.1.2":   # your node1 IP here
@@ -100,7 +100,7 @@ cd XDP_Bandit
 make
 ```
 
-This produces `xdp_lb.o`. If it fails, the most common issue is clang not finding the kernel headers — make sure `linux-headers-$(uname -r)` installed cleanly.
+This produces `xdp_lb.o`. If it fails, the most common issue is clang not finding the kernel headers , make sure `linux-headers-$(uname -r)` installed cleanly.
 
 ---
 
@@ -111,7 +111,7 @@ This produces `xdp_lb.o`. If it fails, the most common issue is clang not findin
 sudo mount -t bpf bpf /sys/fs/bpf/ 2>/dev/null || true
 sudo mkdir -p /sys/fs/bpf/xdp_lb
 
-# attach — change eno1d1 to your interface name if needed
+# attach , change eno1d1 to your interface name if needed
 sudo ip link set dev eno1d1 xdp obj xdp_lb.o sec xdp
 
 # sanity check
@@ -131,7 +131,7 @@ If the directory is empty or missing, the program didn't attach correctly. Check
 
 ## SSH setup for chaos injection
 
-`chaos_env.py` SSHes into `node1` and `node2` by hostname to run `tc` commands. Set that up from the load balancer node:
+`chaos_env.py` SSHes into `node1` and `node2` by hostname to run `tc` commands. Set that up from the load balancer node,
 
 ```bash
 ssh-keygen -t ed25519 -N ""
@@ -149,7 +149,7 @@ ssh node2 "hostname"
 
 You'll want three terminals on the load balancer.
 
-**Terminal 1 — the daemon:**
+**Terminal 1 : the daemon:**
 
 ```bash
 # traffic-aware contextual LinUCB (recommended)
@@ -159,7 +159,7 @@ sudo python3 mab_daemon_traffic.py 10.10.1.2 10.10.1.3
 sudo python3 mab_daemon.py 10.10.1.2 10.10.1.3
 ```
 
-**Terminal 2 — chaos injection:**
+**Terminal 2 : chaos injection:**
 
 ```bash
 sudo python3 chaos_env.py
@@ -167,7 +167,7 @@ sudo python3 chaos_env.py
 
 This alternates a 200ms `tc netem` delay between node1 and node2 every 30 seconds. Watch the daemon output to see it react.
 
-**Terminal 3 — live dashboard:**
+**Terminal 3 : live dashboard:**
 
 ```bash
 streamlit run dashboard.py
@@ -215,8 +215,8 @@ sudo rm -rf /sys/fs/bpf/xdp_lb
 
 | File | What it does |
 |---|---|
-| `xdp_lb.c` | XDP kernel program — classifies traffic, reads backend selector, counts packets |
-| `balancer_config.h` | Hardcoded backend MACs and IPs — edit this before compiling |
+| `xdp_lb.c` | XDP kernel program : classifies traffic, reads backend selector, counts packets |
+| `balancer_config.h` | Hardcoded backend MACs and IPs : edit this before compiling |
 | `Makefile` | Single clang BPF compile rule |
 | `mab_daemon.py` | Basic LinUCB daemon, 3D context, no traffic classification |
 | `mab_daemon_traffic.py` | Contextual LinUCB daemon, reads elephant flag from BPF map |
@@ -231,7 +231,7 @@ sudo rm -rf /sys/fs/bpf/xdp_lb
 
 ## Known issues / limitations
 
-- The XDP program returns `XDP_PASS` — it does not actually redirect packets at the driver level. Routing still goes through the kernel IP stack. Real redirection with `bpf_redirect` and header rewriting is the obvious next step but we ran out of time debugging ARP edge cases.
+- The XDP program returns `XDP_PASS` : it does not actually redirect packets at the driver level. Routing still goes through the kernel IP stack. Real redirection with `bpf_redirect` and header rewriting is the obvious next step but we ran out of time debugging ARP edge cases.
 - The BPF maps use `BPF_MAP_TYPE_ARRAY` with atomic adds. At high packet rates this would cause cache-line contention across cores. Switching to `PERCPU_ARRAY` is straightforward.
 - Reward is measured by pinging the chosen backend. This is slow (adds ~20ms per tick from the subprocess call) and imprecise. Good enough for a testbed, not for production.
 - `chaos_env.py` hardcodes the interface name `eno1d1`. Change it if your CloudLab nodes have a different experiment interface.
